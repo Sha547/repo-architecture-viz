@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repo Architecture Visualizer</title>
+    <link rel="stylesheet" href="./viewer.css" />
+  </head>
+  <body>
+    <header id="topbar">
+      <div class="brand">
+        <span class="logo">⚡</span>
+        <span class="title" id="repoTitle">Loading…</span>
+      </div>
+      <div class="actions">
+        <input id="searchInput" type="search" placeholder="Search files…" />
+        <button id="patBtn" type="button">PAT</button>
+      </div>
+    </header>
+    <main>
+      <aside id="sidebar">
+        <section id="status">
+          <div class="status-row">
+            <span>Status</span>
+            <span id="statusText">Idle</span>
+          </div>
+          <div class="status-row">
+            <span>Files</span>
+            <span id="fileCount">—</span>
+          </div>
+          <div class="status-row">
+            <span>Edges</span>
+            <span id="edgeCount">—</span>
+          </div>
+        </section>
+        <section id="folders">
+          <h3>Folders</h3>
+          <ul id="folderList"></ul>
+        </section>
+      </aside>
+      <div id="graph"></div>
+    </main>
+    <script type="module" src="./viewer.ts"></script>
+  </body>
+</html>

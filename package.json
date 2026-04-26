@@ -1,0 +1,25 @@
+{
+  "name": "repo-architecture-viz",
+  "version": "0.1.0",
+  "description": "Chrome extension that visualizes any GitHub repo as an interactive dependency graph.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "private": true,
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.4.0",
+    "@types/chrome": "^0.1.40",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  },
+  "dependencies": {
+    "@types/d3": "^7.4.3",
+    "d3": "^7.9.0",
+    "web-tree-sitter": "^0.26.8"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Repo Architecture Visualizer",
+  "version": "0.1.0",
+  "description": "Visualize any GitHub repository as an interactive dependency graph.",
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["src/content/content.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://api.github.com/*"],
+  "background": {
+    "service_worker": "src/background/background.ts",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/viewer/viewer.html", "*.wasm"],
+      "matches": ["https://github.com/*"]
+    }
+  ]
+}
