@@ -8,6 +8,7 @@ import {
   folderStats,
   findCycles,
 } from "./graph/analytics";
+import { exportSvgAsPng, buildMermaid } from "./exporters";
 import * as d3 from "d3";
 
 const params = new URLSearchParams(window.location.search);
@@ -19,10 +20,13 @@ const statusEl = el("statusText");
 const fileCountEl = el("fileCount");
 const edgeCountEl = el("edgeCount");
 const folderListEl = el("folderList");
+const hotFilesListEl = el("hotFilesList");
 const searchInput = el("searchInput") as HTMLInputElement;
 const patBtn = el("patBtn") as HTMLButtonElement;
 const aiKeyBtn = el("aiKeyBtn") as HTMLButtonElement;
 const explainBtn = el("explainBtn") as HTMLButtonElement;
+const exportPngBtn = el("exportPngBtn") as HTMLButtonElement;
+const exportMermaidBtn = el("exportMermaidBtn") as HTMLButtonElement;
 const modalBackdrop = el("modalBackdrop");
 const modalBody = el("modalBody");
 const modalClose = el("modalClose") as HTMLButtonElement;
@@ -52,6 +56,8 @@ async function main() {
   patBtn.addEventListener("click", openPatDialog);
   aiKeyBtn.addEventListener("click", openAiKeyDialog);
   explainBtn.addEventListener("click", openExplainModal);
+  exportPngBtn.addEventListener("click", onExportPng);
+  exportMermaidBtn.addEventListener("click", onExportMermaid);
   modalClose.addEventListener("click", closeModal);
   modalBackdrop.addEventListener("click", (e) => {
     if (e.target === modalBackdrop) closeModal();
@@ -115,6 +121,9 @@ async function main() {
 
   // Folder legend
   renderFolderList(graph.nodes.map((n) => n.folder));
+
+  // Hot files (top imported)
+  renderHotFiles(graph);
 
   status(`Rendering ${graph.nodes.length} nodes, ${graph.edges.length} edges…`);
   renderHandle = renderForceGraph(graphContainer, graph.nodes, graph.edges, {
@@ -257,6 +266,64 @@ function renderFolderList(folders: string[]) {
     });
     folderListEl.appendChild(li);
   }
+}
+
+function renderHotFiles(graph: { nodes: FileNode[]; edges: ImportEdge[] }) {
+  const hot = topImportedFiles(graph.nodes, graph.edges, 10);
+  hotFilesListEl.innerHTML = "";
+  if (hot.length === 0) {
+    hotFilesListEl.innerHTML = `<li style="color:#86868b;font-style:italic">none yet</li>`;
+    return;
+  }
+  for (const { path, importers } of hot) {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "file";
+    name.textContent = path.split("/").pop() ?? path;
+    name.title = path;
+    const cnt = document.createElement("span");
+    cnt.className = "count";
+    cnt.textContent = `${importers}`;
+    li.appendChild(name);
+    li.appendChild(cnt);
+    li.addEventListener("click", () => {
+      renderHandle?.highlightNode(path);
+    });
+    hotFilesListEl.appendChild(li);
+  }
+}
+
+async function onExportPng() {
+  const svg = graphContainer.querySelector("svg");
+  if (!svg) return;
+  try {
+    await exportSvgAsPng(svg, `${owner}-${repo}-graph.png`, 2);
+  } catch (err) {
+    alert(`Export failed: ${(err as Error).message}`);
+  }
+}
+
+async function onExportMermaid() {
+  if (!lastGraph) return;
+  const text = buildMermaid(lastGraph.nodes, lastGraph.edges);
+  try {
+    await navigator.clipboard.writeText(text);
+    flashButton(exportMermaidBtn, "Copied!");
+  } catch {
+    // Fallback: open in modal so user can copy manually
+    modalBackdrop.removeAttribute("hidden");
+    modalBody.innerHTML = `<p class="muted">Copy this Mermaid diagram into your README:</p><pre style="background:#0d0d0f;padding:12px;border-radius:8px;overflow:auto;font-size:11px">${escapeHtml(text)}</pre>`;
+  }
+}
+
+function flashButton(btn: HTMLButtonElement, message: string) {
+  const original = btn.textContent;
+  btn.textContent = message;
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.disabled = false;
+  }, 1500);
 }
 
 function onSearch() {

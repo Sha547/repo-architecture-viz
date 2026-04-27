@@ -15,6 +15,8 @@
       <div class="actions">
         <input id="searchInput" type="search" placeholder="Search files…" />
         <button id="explainBtn" type="button" class="primary">✨ Explain</button>
+        <button id="exportPngBtn" type="button" title="Download as PNG">PNG</button>
+        <button id="exportMermaidBtn" type="button" title="Copy Mermaid diagram">Mermaid</button>
         <button id="patBtn" type="button" title="GitHub Personal Access Token">PAT</button>
         <button id="aiKeyBtn" type="button" title="Anthropic API key">AI key</button>
       </div>
@@ -38,6 +40,10 @@
         <section id="folders">
           <h3>Folders</h3>
           <ul id="folderList"></ul>
+        </section>
+        <section id="hotFilesSection">
+          <h3>Hot files</h3>
+          <ul id="hotFilesList"></ul>
         </section>
       </aside>
       <div id="graph"></div>
