@@ -24,5 +24,11 @@
       "resources": ["src/viewer/viewer.html", "*.wasm"],
       "matches": ["https://github.com/*"]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "repo-architecture-viz@sha547.dev",
+      "strict_min_version": "121.0"
+    }
+  }
 }
