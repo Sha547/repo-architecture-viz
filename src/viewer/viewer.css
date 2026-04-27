@@ -69,6 +69,103 @@ body {
   border-color: #4f8cff;
 }
 
+.actions button.primary {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  border-color: transparent;
+  color: white;
+  font-weight: 500;
+}
+
+.actions button.primary:hover {
+  filter: brightness(1.1);
+}
+
+#modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#modalBackdrop[hidden] {
+  display: none;
+}
+
+#modal {
+  width: min(640px, 90vw);
+  max-height: 80vh;
+  background: #16171b;
+  border: 1px solid #2a2b30;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2b30;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-head button {
+  background: none;
+  border: none;
+  color: #86868b;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.modal-head button:hover {
+  color: #e8e8ec;
+}
+
+#modalBody {
+  padding: 20px 24px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #d0d0d6;
+}
+
+#modalBody p {
+  margin: 0 0 16px;
+}
+
+#modalBody p:last-child {
+  margin-bottom: 0;
+}
+
+#modalBody .muted {
+  color: #86868b;
+}
+
+#modalBody strong {
+  color: #e8e8ec;
+}
+
+#modalBody code {
+  background: #0d0d0f;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
 main {
   display: flex;
   height: calc(100vh - 56px);

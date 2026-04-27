@@ -14,7 +14,9 @@
       </div>
       <div class="actions">
         <input id="searchInput" type="search" placeholder="Search files…" />
-        <button id="patBtn" type="button">PAT</button>
+        <button id="explainBtn" type="button" class="primary">✨ Explain</button>
+        <button id="patBtn" type="button" title="GitHub Personal Access Token">PAT</button>
+        <button id="aiKeyBtn" type="button" title="Anthropic API key">AI key</button>
       </div>
     </header>
     <main>
@@ -40,6 +42,18 @@
       </aside>
       <div id="graph"></div>
     </main>
+
+    <div id="modalBackdrop" hidden>
+      <div id="modal">
+        <div class="modal-head">
+          <h2>Architecture summary</h2>
+          <button id="modalClose" type="button" aria-label="Close">×</button>
+        </div>
+        <div id="modalBody">
+          <p class="muted">Generating…</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./viewer.ts"></script>
   </body>
 </html>

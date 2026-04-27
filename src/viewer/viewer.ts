@@ -1,7 +1,13 @@
 import { createResolver, externalPackageName } from "./parser/resolver";
 import { extractImports, countLines } from "./parser/extract-imports";
-import { buildGraph, type ParsedFile } from "./graph/builder";
+import { buildGraph, type ParsedFile, type FileNode, type ImportEdge } from "./graph/builder";
 import { renderForceGraph } from "./graph/force-layout";
+import {
+  topImportedFiles,
+  externalDependencies,
+  folderStats,
+  findCycles,
+} from "./graph/analytics";
 import * as d3 from "d3";
 
 const params = new URLSearchParams(window.location.search);
@@ -15,6 +21,11 @@ const edgeCountEl = el("edgeCount");
 const folderListEl = el("folderList");
 const searchInput = el("searchInput") as HTMLInputElement;
 const patBtn = el("patBtn") as HTMLButtonElement;
+const aiKeyBtn = el("aiKeyBtn") as HTMLButtonElement;
+const explainBtn = el("explainBtn") as HTMLButtonElement;
+const modalBackdrop = el("modalBackdrop");
+const modalBody = el("modalBody");
+const modalClose = el("modalClose") as HTMLButtonElement;
 const graphContainer = el("graph");
 
 const SOURCE_REGEX = /\.(tsx?|jsx?|mjs|cjs)$/;
@@ -25,6 +36,7 @@ titleEl.textContent = `${owner}/${repo}`;
 
 let renderHandle: ReturnType<typeof renderForceGraph> | null = null;
 let activeFolders: Set<string> | null = null;
+let lastGraph: { nodes: FileNode[]; edges: ImportEdge[] } | null = null;
 
 main().catch((err) => {
   status(`Error: ${err.message}`);
@@ -38,6 +50,12 @@ async function main() {
   }
 
   patBtn.addEventListener("click", openPatDialog);
+  aiKeyBtn.addEventListener("click", openAiKeyDialog);
+  explainBtn.addEventListener("click", openExplainModal);
+  modalClose.addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
   searchInput.addEventListener("input", onSearch);
 
   status("Fetching repo tree…");
@@ -76,12 +94,31 @@ async function main() {
   const graph = buildGraph(parsed, resolver, externalPackageName);
 
   edgeCountEl.textContent = String(graph.edges.length);
+  lastGraph = graph;
+
+  // Detect cycles for visual highlighting
+  const cycles = findCycles(graph.nodes, graph.edges, 50);
+  const cycleEdgeSet = new Set<string>();
+  for (const cycle of cycles) {
+    for (let i = 0; i < cycle.length; i++) {
+      const from = cycle[i];
+      const to = cycle[(i + 1) % cycle.length];
+      cycleEdgeSet.add(`${from}->${to}`);
+    }
+  }
+  if (cycles.length > 0) {
+    const cyclesRow = document.createElement("div");
+    cyclesRow.className = "status-row";
+    cyclesRow.innerHTML = `<span style="color:#ef4444">⚠ Cycles</span><span style="color:#ef4444">${cycles.length}</span>`;
+    el("status").appendChild(cyclesRow);
+  }
 
   // Folder legend
   renderFolderList(graph.nodes.map((n) => n.folder));
 
   status(`Rendering ${graph.nodes.length} nodes, ${graph.edges.length} edges…`);
   renderHandle = renderForceGraph(graphContainer, graph.nodes, graph.edges, {
+    cycleEdges: cycleEdgeSet,
     onNodeClick: (node) => {
       if (node.external) return;
       const url = `https://github.com/${owner}/${repo}/blob/${sha}/${node.id}`;
@@ -250,6 +287,67 @@ async function openPatDialog() {
   if (next == null) return;
   await sendMessage({ type: "SET_PAT", pat: next.trim() });
   alert("PAT saved. Refresh the page to use it.");
+}
+
+async function openAiKeyDialog() {
+  const current = await sendMessage({ type: "GET_ANTHROPIC_KEY" });
+  const existing: string = current.ok ? current.key : "";
+  const next = prompt(
+    "Paste your Anthropic API key (sk-ant-...).\nNeeded for the Explain feature. Stored locally only.",
+    existing,
+  );
+  if (next == null) return;
+  await sendMessage({ type: "SET_ANTHROPIC_KEY", key: next.trim() });
+  alert("AI key saved.");
+}
+
+async function openExplainModal() {
+  if (!lastGraph) {
+    alert("Wait for the graph to finish rendering first.");
+    return;
+  }
+  modalBackdrop.removeAttribute("hidden");
+  modalBody.innerHTML = `<p class="muted">Asking Claude to read the architecture…</p>`;
+
+  const cycles = findCycles(lastGraph.nodes, lastGraph.edges, 5);
+  const payload = {
+    repo: `${owner}/${repo}`,
+    fileCount: lastGraph.nodes.filter((n) => !n.external).length,
+    edgeCount: lastGraph.edges.length,
+    folders: folderStats(lastGraph.nodes).slice(0, 10),
+    topImported: topImportedFiles(lastGraph.nodes, lastGraph.edges, 10),
+    externalDeps: externalDependencies(lastGraph.nodes).slice(0, 30),
+    cycles,
+  };
+
+  const res = await sendMessage({ type: "EXPLAIN_ARCHITECTURE", payload });
+  if (!res.ok) {
+    modalBody.innerHTML = `<p class="muted">Error: ${escapeHtml(res.error)}</p>`;
+    return;
+  }
+  modalBody.innerHTML = renderMarkdown(res.text);
+}
+
+function closeModal() {
+  modalBackdrop.setAttribute("hidden", "");
+}
+
+function renderMarkdown(text: string): string {
+  // Tiny markdown: **bold**, `code`, paragraph breaks
+  const escaped = escapeHtml(text);
+  const inlined = escaped
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+  const paragraphs = inlined.split(/\n\n+/).map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`);
+  return paragraphs.join("");
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function status(msg: string) {

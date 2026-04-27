@@ -20,6 +20,7 @@ export function renderForceGraph(
   rawEdges: ImportEdge[],
   options: {
     onNodeClick?: (node: FileNode) => void;
+    cycleEdges?: Set<string>; // keys "source->target"
   } = {},
 ): RenderResult {
   // Defensive copy because d3 mutates
@@ -68,15 +69,40 @@ export function renderForceGraph(
     .attr("d", "M0,-5L10,0L0,5")
     .attr("fill", "#666");
 
+  const cycleSet = options.cycleEdges ?? new Set<string>();
+  const isCycleEdge = (d: SimEdge) => {
+    const s = typeof d.source === "object" ? d.source.id : d.source;
+    const t = typeof d.target === "object" ? d.target.id : d.target;
+    return cycleSet.has(`${s}->${t}`);
+  };
+
+  // Red arrowhead for cycle edges
+  defs
+    .append("marker")
+    .attr("id", "arrow-cycle")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 14)
+    .attr("refY", 0)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5")
+    .attr("fill", "#ef4444");
+
   const link = g
     .append("g")
     .selectAll("line")
     .data(edges)
     .join("line")
-    .attr("stroke", "#52525c")
-    .attr("stroke-opacity", 0.5)
-    .attr("stroke-width", (d) => Math.min(3, Math.sqrt(d.count)))
-    .attr("marker-end", "url(#arrow)");
+    .attr("stroke", (d) => (isCycleEdge(d) ? "#ef4444" : "#52525c"))
+    .attr("stroke-opacity", (d) => (isCycleEdge(d) ? 0.85 : 0.5))
+    .attr("stroke-width", (d) =>
+      isCycleEdge(d) ? 2 : Math.min(3, Math.sqrt(d.count)),
+    )
+    .attr("marker-end", (d) =>
+      isCycleEdge(d) ? "url(#arrow-cycle)" : "url(#arrow)",
+    );
 
   const node = g
     .append("g")
